@@ -82,6 +82,37 @@ class JaNormalizer
     }
 
     /**
+     * 日本語入力値の総合サニタイズ。
+     * normalize() の全処理に加えて、連続空白の正規化・前後トリムを行う。
+     *
+     * 処理順序:
+     *   1. トラブル文字（制御文字・不可視文字・BOM等）を削除
+     *   2. 半角カナ → 全角カナ・濁音半濁音を1文字に結合（ｶﾞ → ガ、ﾊﾟ → パ）
+     *   3. 一般句読点を ASCII 相当に変換（punctuation: true の場合）
+     *   4. NFKC正規化で全角ASCII → 半角（Ａ → A、１ → 1 等）
+     *   5. 連続した空白（全角・半角・特殊スペース等）を半角スペース1つに置換
+     *   6. 前後の空白をトリム
+     *
+     * @param string $str        対象文字列
+     * @param bool $punctuation  true にすると一般句読点を ASCII 相当に変換する
+     */
+    public static function sanitize(string $str, bool $punctuation = false): string
+    {
+        if ($str === '') {
+            return '';
+        }
+
+        // Step 1〜4: normalizeJa の処理（制御文字削除・半角カナ→全角・NFKC等）
+        $str = static::normalize($str, $punctuation);
+
+        // Step 5: 連続した空白（全角・半角・特殊スペース等）を半角スペース1つに置換
+        $str = (string) preg_replace('/[\p{Z}\s]+/u', ' ', $str);
+
+        // Step 6: 前後のトリム
+        return trim($str);
+    }
+
+    /**
      * トラブル文字を削除し、連続した空白文字を半角スペース1つに正規化して返す。
      *
      * 処理順序:

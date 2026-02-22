@@ -478,6 +478,66 @@ class JaNormalizerTest extends TestCase
     }
 
     // =========================================================================
+    // sanitize
+    // =========================================================================
+
+    #[Test]
+    public function sanitize_空文字列はそのまま返す(): void
+    {
+        $this->assertSame('', JaNormalizer::sanitize(''));
+    }
+
+    #[Test]
+    public function sanitize_半角カナを全角カナに変換する(): void
+    {
+        $this->assertSame('ガイドABC', JaNormalizer::sanitize('ｶﾞｲﾄﾞABC'));
+        $this->assertSame('パソコン', JaNormalizer::sanitize('ﾊﾟｿｺﾝ'));
+    }
+
+    #[Test]
+    public function sanitize_全角ASCIIを半角に変換する(): void
+    {
+        $this->assertSame('ABC123', JaNormalizer::sanitize('ＡＢＣ１２３'));
+        $this->assertSame('hello@example.com', JaNormalizer::sanitize('ｈｅｌｌｏ＠ｅｘａｍｐｌｅ．ｃｏｍ'));
+    }
+
+    #[Test]
+    public function sanitize_連続した空白を半角スペース1つに正規化する(): void
+    {
+        $this->assertSame('山田 太郎', JaNormalizer::sanitize('山田　　太郎'));   // 全角スペース連続
+        $this->assertSame('Hello World', JaNormalizer::sanitize('Hello   World'));
+        $this->assertSame('a b c', JaNormalizer::sanitize("a\t\tb\n\nc"));       // タブ・改行
+    }
+
+    #[Test]
+    public function sanitize_前後の空白をトリムする(): void
+    {
+        $this->assertSame('テスト', JaNormalizer::sanitize('　テスト　'));
+        $this->assertSame('Hello', JaNormalizer::sanitize('  Hello  '));
+    }
+
+    #[Test]
+    public function sanitize_トラブル文字を削除する(): void
+    {
+        $this->assertSame('Hello', JaNormalizer::sanitize("\u{FEFF}Hello"));
+        $this->assertSame('日本語テスト', JaNormalizer::sanitize("日本語\u{200B}テスト"));
+    }
+
+    #[Test]
+    public function sanitize_複合ケース(): void
+    {
+        // 半角カナ + 全角ASCII + 全角スペース + 前後トリム
+        $this->assertSame('ガイド ABC 123', JaNormalizer::sanitize('　ｶﾞｲﾄﾞ　ＡＢＣ　１２３　'));
+    }
+
+    #[Test]
+    public function sanitize_punctuation_trueで句読点も変換する(): void
+    {
+        $this->assertSame('"テスト"', JaNormalizer::sanitize('"テスト"', punctuation: true));
+        $this->assertSame('続く...', JaNormalizer::sanitize('続く…', punctuation: true));
+    }
+
+    // =========================================================================
     // squish
     // =========================================================================
 

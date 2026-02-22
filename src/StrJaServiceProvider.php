@@ -117,6 +117,13 @@ class StrJaServiceProvider extends ServiceProvider
             return JaNormalizer::squish($str);
         });
 
+        // 日本語入力値の総合サニタイズ。
+        // 半角カナ→全角・全角ASCII→半角（NFKC）・連続空白の正規化・前後トリムを一括実行。
+        // punctuation: true で一般句読点も ASCII 相当に変換する。
+        Str::macro('sanitizeJa', function (string $str, bool $punctuation = false): string {
+            return JaNormalizer::sanitize($str, $punctuation);
+        });
+
         // 全角・半角・特殊スペースで文字列を単語に分割する
         // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
         Str::macro('splitWords', function (string $str): array {
