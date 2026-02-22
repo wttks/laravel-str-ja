@@ -25,10 +25,12 @@ class StrJaServiceProvider extends ServiceProvider
         });
 
         // 日本語文字列の正規化
+        // - 不可視制御文字・BOM を削除（常時）
         // - 半角カナ → 全角カナ（濁音・半濁音を1文字に結合）
         // - 全角ASCII（英数字・記号）→ 半角
-        Str::macro('normalizeJa', function (string $str): string {
-            return JaNormalizer::normalize($str);
+        // - punctuation: true で一般句読点を ASCII 相当に変換
+        Str::macro('normalizeJa', function (string $str, bool $punctuation = false): string {
+            return JaNormalizer::normalize($str, $punctuation);
         });
     }
 }

@@ -170,4 +170,82 @@ class JaNormalizerTest extends TestCase
         $expected = "ABC\nガイド\r\n123";
         $this->assertSame($expected, JaNormalizer::normalize($input));
     }
+
+    // =========================================================================
+    // 制御文字削除（常時）
+    // =========================================================================
+
+    #[Test]
+    #[DataProvider('controlCharsProvider')]
+    public function 不可視制御文字が削除される(string $input, string $expected): void
+    {
+        $this->assertSame($expected, JaNormalizer::normalize($input));
+    }
+
+    public static function controlCharsProvider(): array
+    {
+        return [
+            'ゼロ幅スペース' => ["テスト\u{200B}文字列", 'テスト文字列'],
+            'ゼロ幅非結合子' => ["テスト\u{200C}文字列", 'テスト文字列'],
+            'ゼロ幅結合子' => ["テスト\u{200D}文字列", 'テスト文字列'],
+            'LTRマーク' => ["テスト\u{200E}文字列", 'テスト文字列'],
+            'RTLマーク' => ["テスト\u{200F}文字列", 'テスト文字列'],
+            'BOM' => ["\u{FEFF}テスト文字列", 'テスト文字列'],
+            'Word Joiner' => ["テスト\u{2060}文字列", 'テスト文字列'],
+            '複数混在' => ["\u{FEFF}テスト\u{200B}文字\u{200D}列", 'テスト文字列'],
+            '制御文字のみ' => ["\u{FEFF}\u{200B}\u{200C}", ''],
+        ];
+    }
+
+    // =========================================================================
+    // 一般句読点変換（punctuation: true）
+    // =========================================================================
+
+    #[Test]
+    #[DataProvider('punctuationProvider')]
+    public function punctuationオプションで一般句読点が変換される(string $input, string $expected): void
+    {
+        $this->assertSame($expected, JaNormalizer::normalize($input, punctuation: true));
+    }
+
+    public static function punctuationProvider(): array
+    {
+        return [
+            '左右ダブルクォート' => ['"テスト"', '"テスト"'],
+            '左右シングルクォート' => ["\u{2018}テスト\u{2019}", "'テスト'"],
+            'ダブルロー9引用符' => ["\u{201E}テスト\u{201D}", '"テスト"'],
+            '水平省略記号' => ['テスト…続く', 'テスト...続く'],
+            '二点リーダー' => ["テスト\u{2025}続く", 'テスト..続く'],
+            'ENダッシュ' => ["テスト\u{2013}終わり", 'テスト-終わり'],
+            'EMダッシュ' => ["テスト\u{2014}終わり", 'テスト-終わり'],
+            '水平バー' => ["テスト\u{2015}終わり", 'テスト-終わり'],
+            'ハイフン' => ["テスト\u{2010}終わり", 'テスト-終わり'],
+            'プライム' => ["100\u{2032}", "100'"],
+            'ダブルプライム' => ["100\u{2033}", '100"'],
+            '混在' => ["\u{201C}髙橋さん\u{2026}\u{2013}テスト\u{201D}", '"髙橋さん...-テスト"'],
+        ];
+    }
+
+    #[Test]
+    public function punctuationオプションfalseでは一般句読点は変換されない(): void
+    {
+        $input = '"テスト"';
+        // デフォルト（false）では変換しない
+        $this->assertSame($input, JaNormalizer::normalize($input));
+        $this->assertSame($input, JaNormalizer::normalize($input, punctuation: false));
+    }
+
+    #[Test]
+    public function 米印は変換されない(): void
+    {
+        $input = '※注意事項';
+        $this->assertSame($input, JaNormalizer::normalize($input, punctuation: true));
+    }
+
+    #[Test]
+    public function パーミルは変換されない(): void
+    {
+        $input = "5\u{2030}";
+        $this->assertSame($input, JaNormalizer::normalize($input, punctuation: true));
+    }
 }
