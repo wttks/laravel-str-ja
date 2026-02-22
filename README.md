@@ -32,6 +32,12 @@ Laravel 11以降はパッケージ自動検出により、ServiceProviderは自�
 | `Str::normalizeJa($str, punctuation: false)` | 日本語文字列の正規化 |
 | `Str::toHiragana($str)` | カタカナ・半角カナ → ひらがな |
 | `Str::toKatakana($str)` | ひらがな・半角カナ → 全角カタカナ |
+| `Str::isHiragana($str)` | 全体がひらがなか判定（長音符・中点を許容） |
+| `Str::isKatakana($str)` | 全体が全角カタカナか判定（長音符・中点を許容） |
+| `Str::hasHiragana($str)` | ひらがなを含むか判定 |
+| `Str::hasKatakana($str)` | 全角カタカナを含むか判定 |
+| `Str::hasKanji($str)` | 漢字を含むか判定 |
+| `Str::hasJapanese($str)` | ひらがな・カタカナ・漢字のいずれかを含むか判定 |
 
 ## 使い方
 
@@ -126,6 +132,28 @@ Str::toKatakana('ゔ');           // → 'ヴ'
 ```
 
 > **注意**: `toKatakana` はひらがなも変換します。`ｶﾞｲﾄﾞの名前` → `ガイドノ名前`
+
+### 文字種判定
+
+```php
+// 全体判定: フリガナバリデーション等で使用
+Str::isKatakana('ヤマダタロウ');   // → true（全角カタカナのみ）
+Str::isKatakana('ﾔﾏﾀﾞﾀﾛｳ');      // → false（半角カナは不可）
+Str::isKatakana('やまだたろう');   // → false（ひらがな不可）
+
+Str::isHiragana('やまだたろう');   // → true（ひらがなのみ）
+Str::isHiragana('スズキイチロー'); // → false
+
+// 含む判定: 混在テキストの検査等で使用
+Str::hasKanji('日本語テスト');   // → true
+Str::hasKanji('テストABC');      // → false
+Str::hasHiragana('日本語のABC'); // → true
+Str::hasKatakana('アイウのABC'); // → true（半角カナは対象外）
+Str::hasJapanese('山田 Taro');   // → true（漢字を含む）
+Str::hasJapanese('Yamada Taro'); // → false
+```
+
+> **注意**: `isKatakana` / `hasKatakana` / `hasJapanese` は半角カタカナ（ｱｲｳ等）を対象外とします。半角カナを含む入力は事前に `normalizeJa()` や `toKatakana()` で全角変換してから判定してください。
 
 ## SJIS-win 正規化の動作
 
