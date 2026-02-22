@@ -64,6 +64,26 @@ class StrJaServiceProvider extends ServiceProvider
             return KanaConverter::toKatakana($str);
         });
 
+        // 文字列のエンコーディングを判定して返す（'UTF-8' / 'SJIS-win' / 'eucJP-win' / 'ASCII' / false）
+        Str::macro('detectEncoding', function (string $str): string|false {
+            return EncodingDetector::detectEncoding($str);
+        });
+
+        // 文字列が UTF-8 かどうか判定する（ASCIIのみも true）
+        Str::macro('isUtf8', function (string $str): bool {
+            return EncodingDetector::isUtf8($str);
+        });
+
+        // 文字列が SJIS-win かどうか判定する（ASCIIのみも true）
+        Str::macro('isSjis', function (string $str): bool {
+            return EncodingDetector::isSjis($str);
+        });
+
+        // 文字列が eucJP-win かどうか判定する（ASCIIのみも true）
+        Str::macro('isEuc', function (string $str): bool {
+            return EncodingDetector::isEuc($str);
+        });
+
         // 全角・半角・特殊スペースで文字列を単語に分割する
         // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
         Str::macro('splitWords', function (string $str): array {
