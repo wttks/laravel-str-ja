@@ -47,5 +47,15 @@ class StrJaServiceProvider extends ServiceProvider
         Str::macro('normalizeJa', function (string $str, bool $punctuation = false): string {
             return JaNormalizer::normalize($str, $punctuation);
         });
+
+        // カタカナ（全角・半角）→ ひらがな変換
+        Str::macro('toHiragana', function (string $str): string {
+            return KanaConverter::toHiragana($str);
+        });
+
+        // ひらがな・半角カナ → 全角カタカナ変換
+        Str::macro('toKatakana', function (string $str): string {
+            return KanaConverter::toKatakana($str);
+        });
     }
 }
