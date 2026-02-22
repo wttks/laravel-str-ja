@@ -11,4 +11,5 @@ return [
     'is_sjis'         => 'The :attribute must be SJIS-win encoded.',
     'is_euc'          => 'The :attribute must be eucJP-win encoded.',
     'no_unsafe_chars' => 'The :attribute contains invalid characters.',
+    'is_furigana'     => 'The :attribute must contain only hiragana or full-width katakana characters (spaces allowed).',
 ];

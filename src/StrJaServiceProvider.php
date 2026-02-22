@@ -159,6 +159,12 @@ class StrJaServiceProvider extends ServiceProvider
         Str::macro('hasJapanese', function (string $str): bool {
             return CharTypeChecker::hasJapanese($str);
         });
+
+        // フリガナとして有効か判定（空白を許容）
+        // mode: 'both'（デフォルト）/ 'hiragana' / 'katakana'
+        Str::macro('isFurigana', function (string $str, string $mode = 'both'): bool {
+            return CharTypeChecker::isFurigana($str, $mode);
+        });
     }
 
     // =========================================================================
@@ -189,6 +195,14 @@ class StrJaServiceProvider extends ServiceProvider
             'is_euc'          => fn($attr, $val) => EncodingDetector::isEuc((string) $val),
             // 安全でない文字が含まれていないこと（含まれていたら失敗）
             'no_unsafe_chars' => fn($attr, $val) => !JaNormalizer::hasTroubleChars((string) $val),
+            // フリガナ（空白許容、引数で文字種を絞り込み可能）
+            // 引数なし: ひらがな・カタカナどちらでもOK
+            // :hiragana  → ひらがなのみ
+            // :katakana  → カタカナのみ
+            'is_furigana'     => fn($attr, $val, $params) => CharTypeChecker::isFurigana(
+                (string) $val,
+                $params[0] ?? 'both'
+            ),
         ];
 
         foreach ($rules as $name => $callback) {

@@ -234,6 +234,48 @@ class ValidationRulesTest extends TestCase
     }
 
     // =========================================================================
+    // is_furigana
+    // =========================================================================
+
+    #[Test]
+    public function is_furigana_ひらがな空白ありは通過(): void
+    {
+        $this->assertTrue($this->passes('is_furigana', 'やまだたろう'));
+        $this->assertTrue($this->passes('is_furigana', 'やまだ たろう'));   // 半角スペース
+        $this->assertTrue($this->passes('is_furigana', 'やまだ　たろう'));  // 全角スペース
+    }
+
+    #[Test]
+    public function is_furigana_カタカナ空白ありは通過(): void
+    {
+        $this->assertTrue($this->passes('is_furigana', 'ヤマダタロウ'));
+        $this->assertTrue($this->passes('is_furigana', 'ヤマダ タロウ'));   // 半角スペース
+        $this->assertTrue($this->passes('is_furigana', 'ヤマダ　タロウ'));  // 全角スペース
+    }
+
+    #[Test]
+    public function is_furigana_混在と漢字は失敗(): void
+    {
+        $this->assertTrue($this->fails('is_furigana', 'やまだタロウ'));  // 混在
+        $this->assertTrue($this->fails('is_furigana', '山田太郎'));      // 漢字
+        $this->assertTrue($this->fails('is_furigana', 'ﾔﾏﾀﾞ'));         // 半角カナ
+    }
+
+    #[Test]
+    public function is_furigana_hiragana引数でひらがなのみ通過(): void
+    {
+        $this->assertTrue($this->passes('is_furigana:hiragana', 'やまだ たろう'));
+        $this->assertTrue($this->fails('is_furigana:hiragana', 'ヤマダ タロウ'));
+    }
+
+    #[Test]
+    public function is_furigana_katakana引数でカタカナのみ通過(): void
+    {
+        $this->assertTrue($this->passes('is_furigana:katakana', 'ヤマダ タロウ'));
+        $this->assertTrue($this->fails('is_furigana:katakana', 'やまだ たろう'));
+    }
+
+    // =========================================================================
     // エラーメッセージ確認
     // =========================================================================
 

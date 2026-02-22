@@ -367,4 +367,83 @@ class CharTypeCheckerTest extends TestCase
         $this->assertFalse(CharTypeChecker::hasJapanese('Yamada Taro'));
         $this->assertFalse(CharTypeChecker::hasJapanese('12345'));
     }
+
+    // =========================================================================
+    // isFurigana
+    // =========================================================================
+
+    #[Test]
+    public function isFurigana_空文字はfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana(''));
+    }
+
+    #[Test]
+    public function isFurigana_スペースのみはfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana('   '));
+        $this->assertFalse(CharTypeChecker::isFurigana('　　'));  // 全角スペースのみ
+    }
+
+    #[Test]
+    public function isFurigana_both_ひらがなはtrue(): void
+    {
+        $this->assertTrue(CharTypeChecker::isFurigana('やまだたろう'));
+        $this->assertTrue(CharTypeChecker::isFurigana('やまだ たろう'));   // 半角スペース
+        $this->assertTrue(CharTypeChecker::isFurigana('やまだ　たろう'));  // 全角スペース
+        $this->assertTrue(CharTypeChecker::isFurigana('すずきいちろー'));  // 長音符
+    }
+
+    #[Test]
+    public function isFurigana_both_カタカナはtrue(): void
+    {
+        $this->assertTrue(CharTypeChecker::isFurigana('ヤマダタロウ'));
+        $this->assertTrue(CharTypeChecker::isFurigana('ヤマダ タロウ'));   // 半角スペース
+        $this->assertTrue(CharTypeChecker::isFurigana('ヤマダ　タロウ'));  // 全角スペース
+        $this->assertTrue(CharTypeChecker::isFurigana('スズキイチロー'));  // 長音符
+    }
+
+    #[Test]
+    public function isFurigana_both_ひらがなとカタカナの混在はfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana('やまだタロウ'));
+        $this->assertFalse(CharTypeChecker::isFurigana('ヤマダたろう'));
+    }
+
+    #[Test]
+    public function isFurigana_both_その他の文字はfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana('山田太郎'));   // 漢字
+        $this->assertFalse(CharTypeChecker::isFurigana('ﾔﾏﾀﾞ'));       // 半角カナ
+        $this->assertFalse(CharTypeChecker::isFurigana('Yamada'));     // ASCII
+        $this->assertFalse(CharTypeChecker::isFurigana('やまだABC'));  // ひらがな+ASCII
+    }
+
+    #[Test]
+    public function isFurigana_hiragana_ひらがなのみtrue(): void
+    {
+        $this->assertTrue(CharTypeChecker::isFurigana('やまだたろう', 'hiragana'));
+        $this->assertTrue(CharTypeChecker::isFurigana('やまだ たろう', 'hiragana'));
+    }
+
+    #[Test]
+    public function isFurigana_hiragana_カタカナはfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana('ヤマダタロウ', 'hiragana'));
+        $this->assertFalse(CharTypeChecker::isFurigana('やまだタロウ', 'hiragana'));
+    }
+
+    #[Test]
+    public function isFurigana_katakana_カタカナのみtrue(): void
+    {
+        $this->assertTrue(CharTypeChecker::isFurigana('ヤマダタロウ', 'katakana'));
+        $this->assertTrue(CharTypeChecker::isFurigana('ヤマダ タロウ', 'katakana'));
+    }
+
+    #[Test]
+    public function isFurigana_katakana_ひらがなはfalse(): void
+    {
+        $this->assertFalse(CharTypeChecker::isFurigana('やまだたろう', 'katakana'));
+        $this->assertFalse(CharTypeChecker::isFurigana('やまだタロウ', 'katakana'));
+    }
 }

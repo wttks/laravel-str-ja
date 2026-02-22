@@ -98,4 +98,31 @@ class CharTypeChecker
         // \p{Han}: 漢字
         return (bool) preg_match('/[\p{Hiragana}\x{30A0}-\x{30FF}\p{Han}]/u', $str);
     }
+
+    /**
+     * フリガナとして有効かどうか判定する。
+     * 空白（全角・半角）を許容し、空白を除いた文字が指定の文字種で統一されていることを確認する。
+     *
+     * @param string $mode 'hiragana'（ひらがなのみ）/ 'katakana'（カタカナのみ）/ 'both'（どちらでもOK）
+     */
+    public static function isFurigana(string $str, string $mode = 'both'): bool
+    {
+        if ($str === '') {
+            return false;
+        }
+
+        // 全角・半角スペースを除去して文字種を判定
+        $stripped = (string) preg_replace('/[\s\x{3000}]+/u', '', $str);
+
+        if ($stripped === '') {
+            // スペースのみは無効
+            return false;
+        }
+
+        return match ($mode) {
+            'hiragana' => static::isHiragana($stripped),
+            'katakana' => static::isKatakana($stripped),
+            default    => static::isHiragana($stripped) || static::isKatakana($stripped),
+        };
+    }
 }

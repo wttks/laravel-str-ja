@@ -11,4 +11,5 @@ return [
     'is_sjis'         => ':attributeはSJIS-winエンコーディングで入力してください。',
     'is_euc'          => ':attributeはeucJP-winエンコーディングで入力してください。',
     'no_unsafe_chars' => ':attributeに使用できない文字が含まれています。',
+    'is_furigana'     => ':attributeはひらがなまたは全角カタカナ（空白可）で入力してください。',
 ];
