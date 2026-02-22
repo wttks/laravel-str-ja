@@ -82,6 +82,32 @@ class JaNormalizer
     }
 
     /**
+     * トラブル文字を削除し、連続した空白文字を半角スペース1つに正規化して返す。
+     *
+     * 処理順序:
+     *   1. トラブル文字（制御文字・不可視文字・BOM等）を削除
+     *   2. 全角スペース・NBSP・ゼロ幅スペース等を含む連続空白を半角スペース1つに置換
+     *   3. 前後の空白をトリム
+     */
+    public static function squish(string $str): string
+    {
+        if ($str === '') {
+            return '';
+        }
+
+        // Step 1: トラブル文字を削除
+        $str = static::removeTroubleChars($str);
+
+        // Step 2: 連続した空白（全角・半角・特殊スペース等）を半角スペース1つに置換
+        // \p{Z}: Unicode Space Separator（全角スペース・NBSP・細いスペース等）
+        // \s: 半角スペース・タブ・改行（CR/LF）
+        $str = (string) preg_replace('/[\p{Z}\s]+/u', ' ', $str);
+
+        // Step 3: 前後をトリム
+        return trim($str);
+    }
+
+    /**
      * 文字列の単語数を返す。
      * 全角・半角・特殊スペースで区切られた単語をカウントする。
      * 空文字列は 0 を返す。

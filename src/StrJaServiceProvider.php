@@ -111,6 +111,12 @@ class StrJaServiceProvider extends ServiceProvider
             return JaNormalizer::removeTroubleChars($str);
         });
 
+        // トラブル文字を削除し、連続した空白（全角・半角・特殊スペース等）を
+        // 半角スペース1つに正規化し、前後をトリムして返す
+        Str::macro('squishJa', function (string $str): string {
+            return JaNormalizer::squish($str);
+        });
+
         // 全角・半角・特殊スペースで文字列を単語に分割する
         // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
         Str::macro('splitWords', function (string $str): array {

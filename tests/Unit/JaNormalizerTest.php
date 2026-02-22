@@ -478,6 +478,81 @@ class JaNormalizerTest extends TestCase
     }
 
     // =========================================================================
+    // squish
+    // =========================================================================
+
+    #[Test]
+    public function squish_空文字列はそのまま返す(): void
+    {
+        $this->assertSame('', JaNormalizer::squish(''));
+    }
+
+    #[Test]
+    public function squish_通常文字列はそのまま返す(): void
+    {
+        $this->assertSame('日本語テスト', JaNormalizer::squish('日本語テスト'));
+        $this->assertSame('Hello World', JaNormalizer::squish('Hello World'));
+    }
+
+    #[Test]
+    public function squish_連続した半角スペースを1つに正規化する(): void
+    {
+        $this->assertSame('Hello World', JaNormalizer::squish('Hello   World'));
+        $this->assertSame('a b c', JaNormalizer::squish('a  b  c'));
+    }
+
+    #[Test]
+    public function squish_全角スペースを半角スペース1つに正規化する(): void
+    {
+        $this->assertSame('山田 太郎', JaNormalizer::squish('山田　太郎'));       // 全角スペース1つ
+        $this->assertSame('山田 太郎', JaNormalizer::squish('山田　　太郎'));     // 全角スペース連続
+        $this->assertSame('山田 太郎', JaNormalizer::squish('山田　 　太郎'));    // 全角・半角混在
+    }
+
+    #[Test]
+    public function squish_NBSPや特殊スペースも正規化する(): void
+    {
+        $this->assertSame('a b', JaNormalizer::squish("a\u{00A0}b"));   // NBSP
+        $this->assertSame('a b', JaNormalizer::squish("a\u{2009}b"));   // 細いスペース
+        $this->assertSame('a b', JaNormalizer::squish("a\u{3000}b"));   // 全角スペース（ideographic space）
+    }
+
+    #[Test]
+    public function squish_タブや改行も半角スペースに変換される(): void
+    {
+        $this->assertSame('a b', JaNormalizer::squish("a\tb"));
+        $this->assertSame('a b', JaNormalizer::squish("a\nb"));
+        $this->assertSame('a b', JaNormalizer::squish("a\r\nb"));
+    }
+
+    #[Test]
+    public function squish_前後の空白をトリムする(): void
+    {
+        $this->assertSame('Hello', JaNormalizer::squish('  Hello  '));
+        $this->assertSame('日本語', JaNormalizer::squish('　日本語　'));   // 全角スペース
+        $this->assertSame('a b c', JaNormalizer::squish('  a  b  c  '));
+    }
+
+    #[Test]
+    public function squish_トラブル文字を削除する(): void
+    {
+        // ゼロ幅スペースは空白扱いで吸収される
+        $this->assertSame('日本語テスト', JaNormalizer::squish("日本語\u{200B}テスト"));
+        // BOM は削除される
+        $this->assertSame('Hello', JaNormalizer::squish("\u{FEFF}Hello"));
+        // NULL バイトは削除される
+        $this->assertSame('Hello', JaNormalizer::squish("Hel\x00lo"));
+    }
+
+    #[Test]
+    public function squish_複合ケース(): void
+    {
+        // BOM + 全角スペース + ゼロ幅スペース + 改行が混在
+        $input = "\u{FEFF}山田　　\u{200B}太郎\n\n鈴木";
+        $this->assertSame('山田 太郎 鈴木', JaNormalizer::squish($input));
+    }
+
+    // =========================================================================
     // countWords
     // =========================================================================
 
