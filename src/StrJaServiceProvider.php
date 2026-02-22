@@ -24,6 +24,21 @@ class StrJaServiceProvider extends ServiceProvider
             return SjisConverter::normalize($str);
         });
 
+        // UTF-8 → eucJP-win 変換（正規化込み）
+        Str::macro('toEuc', function (string $str): string {
+            return EucConverter::toEuc($str);
+        });
+
+        // eucJP-win → UTF-8 変換
+        Str::macro('fromEuc', function (string $str): string {
+            return EucConverter::fromEuc($str);
+        });
+
+        // eucJP-win変換前の正規化のみ実行（変換はしない）
+        Str::macro('normalizeForEuc', function (string $str): string {
+            return EucConverter::normalize($str);
+        });
+
         // 日本語文字列の正規化
         // - 不可視制御文字・BOM を削除（常時）
         // - 半角カナ → 全角カナ（濁音・半濁音を1文字に結合）
