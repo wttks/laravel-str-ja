@@ -63,5 +63,35 @@ class StrJaServiceProvider extends ServiceProvider
         Str::macro('toKatakana', function (string $str): string {
             return KanaConverter::toKatakana($str);
         });
+
+        // 文字列全体がひらがなか判定（長音符・中点を許容）
+        Str::macro('isHiragana', function (string $str): bool {
+            return CharTypeChecker::isHiragana($str);
+        });
+
+        // 文字列全体が全角カタカナか判定（長音符・中点を許容）
+        Str::macro('isKatakana', function (string $str): bool {
+            return CharTypeChecker::isKatakana($str);
+        });
+
+        // ひらがなを含むか判定
+        Str::macro('hasHiragana', function (string $str): bool {
+            return CharTypeChecker::hasHiragana($str);
+        });
+
+        // 全角カタカナを含むか判定
+        Str::macro('hasKatakana', function (string $str): bool {
+            return CharTypeChecker::hasKatakana($str);
+        });
+
+        // 漢字を含むか判定
+        Str::macro('hasKanji', function (string $str): bool {
+            return CharTypeChecker::hasKanji($str);
+        });
+
+        // 日本語文字（ひらがな・カタカナ・漢字）を含むか判定
+        Str::macro('hasJapanese', function (string $str): bool {
+            return CharTypeChecker::hasJapanese($str);
+        });
     }
 }
