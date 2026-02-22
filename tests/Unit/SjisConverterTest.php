@@ -78,7 +78,8 @@ class SjisConverterTest extends TestCase
             'EMダッシュ' => ['—', '-'],
             'ENダッシュ' => ['–', '-'],
             'マイナス記号' => ['−', '－'],
-            '平行記号' => ['∥', '‖'],
+            // U+2225 平行記号はSJIS-win変換可能なためテーブル不要（変換されない）
+            '平行記号' => ['∥', '∥'],
             // 全角チルダ(U+FF5E)はNFKC正規化で半角チルダ(~)になる（strtrより先にNFKCが動作するため）
             '全角チルダ' => ['～', '~'],
             'はしご高を含む文字列' => ['髙橋さんの住所は﨑山です', '高橋さんの住所は崎山です'],
@@ -204,6 +205,22 @@ class SjisConverterTest extends TestCase
         $input = '髙橋㈱の﨑山支店';
         $expected = '高橋(株)の崎山支店';
         $this->assertSame($expected, SjisConverter::normalize($input));
+    }
+
+    // =========================================================================
+    // 変換テーブル全エントリの網羅確認
+    // =========================================================================
+
+    #[Test]
+    public function 変換テーブルの全変換先文字はSJIS変換できる(): void
+    {
+        // toSjis() はNFKC正規化込みのため、変換先文字のみ mb_convert_encoding で直接確認する
+        $table = require __DIR__ . '/../../src/Data/IbmExtendedChars.php';
+        foreach ($table as $from => $to) {
+            $sjis = mb_convert_encoding($to, 'SJIS-win', 'UTF-8');
+            $restored = mb_convert_encoding($sjis, 'UTF-8', 'SJIS-win');
+            $this->assertSame($to, $restored, "変換先文字 '{$to}' (from: '{$from}') のラウンドトリップが失敗");
+        }
     }
 
     // =========================================================================

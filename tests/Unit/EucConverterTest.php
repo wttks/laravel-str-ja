@@ -83,7 +83,8 @@ class EucConverterTest extends TestCase
             'EMダッシュ' => ['—', '-'],
             'ENダッシュ' => ['–', '-'],
             'マイナス記号' => ['−', '－'],
-            '平行記号' => ['∥', '‖'],
+            // U+2225 平行記号はEUC変換可能なためテーブル不要（変換されない）
+            '平行記号' => ['∥', '∥'],
             // 全角チルダ(U+FF5E)はNFKC正規化で半角チルダ(~)になる
             '全角チルダ' => ['～', '~'],
             'はしご高を含む文字列' => ['髙橋さんの住所は﨑山です', '高橋さんの住所は崎山です'],
@@ -200,6 +201,22 @@ class EucConverterTest extends TestCase
         $euc = EucConverter::toEuc('100€');
         $restored = EucConverter::fromEuc($euc);
         $this->assertSame('100?', $restored);
+    }
+
+    // =========================================================================
+    // 変換テーブル全エントリの網羅確認
+    // =========================================================================
+
+    #[Test]
+    public function 変換テーブルの全変換先文字はEUC変換できる(): void
+    {
+        // toEuc() はNFKC正規化込みのため、変換先文字のみ mb_convert_encoding で直接確認する
+        $table = require __DIR__ . '/../../src/Data/IbmExtendedChars.php';
+        foreach ($table as $from => $to) {
+            $euc = mb_convert_encoding($to, 'eucJP-win', 'UTF-8');
+            $restored = mb_convert_encoding($euc, 'UTF-8', 'eucJP-win');
+            $this->assertSame($to, $restored, "変換先文字 '{$to}' (from: '{$from}') のラウンドトリップが失敗");
+        }
     }
 
     // =========================================================================
