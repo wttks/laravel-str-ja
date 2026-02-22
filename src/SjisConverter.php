@@ -91,6 +91,49 @@ class SjisConverter
         return strlen(mb_convert_encoding($str, 'SJIS-win', 'UTF-8'));
     }
 
+    /**
+     * 文字列を SJIS-win 変換後のバイト数が maxBytes 以内になるよう末尾を切り捨てる。
+     * 全角文字（2バイト）の途中では切らない。
+     *
+     * @param int  $maxBytes  切り捨て後の最大バイト数（SJIS-win換算）
+     * @param bool $normalize true にすると NFKC 正規化・異体字変換を行ってから切り捨てる
+     */
+    public static function truncateByBytes(string $str, int $maxBytes, bool $normalize = false): string
+    {
+        if ($str === '' || $maxBytes <= 0) {
+            return '';
+        }
+
+        if ($normalize) {
+            $str = static::normalize($str);
+        }
+
+        // 既にバイト数以内なら変換不要
+        $sjis = mb_convert_encoding($str, 'SJIS-win', 'UTF-8');
+        if (strlen($sjis) <= $maxBytes) {
+            return $str;
+        }
+
+        // UTF-8文字列を1文字ずつ処理し、SJISバイト数が maxBytes に収まる範囲で切り捨てる
+        // mb_str_split で Unicode スカラー値単位に分割（結合文字等は考慮しない）
+        $result = '';
+        $usedBytes = 0;
+
+        foreach (mb_str_split($str, 1, 'UTF-8') as $char) {
+            $sjisChar = mb_convert_encoding($char, 'SJIS-win', 'UTF-8');
+            $charBytes = strlen($sjisChar);
+
+            if ($usedBytes + $charBytes > $maxBytes) {
+                break;
+            }
+
+            $result .= $char;
+            $usedBytes += $charBytes;
+        }
+
+        return $result;
+    }
+
     // =========================================================================
     // ベンチマーク比較用の別実装
     // 通常使用は normalize() / toSjis() を使うこと

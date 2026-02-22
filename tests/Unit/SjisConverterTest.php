@@ -258,6 +258,119 @@ class SjisConverterTest extends TestCase
     }
 
     // =========================================================================
+    // truncateByBytes: SJISバイト数上限での切り捨て
+    // =========================================================================
+
+    #[Test]
+    public function truncateByBytes_空文字はそのまま返す(): void
+    {
+        $this->assertSame('', SjisConverter::truncateByBytes('', 10));
+    }
+
+    #[Test]
+    public function truncateByBytes_maxBytesが0の場合は空文字を返す(): void
+    {
+        $this->assertSame('', SjisConverter::truncateByBytes('日本語', 0));
+    }
+
+    #[Test]
+    public function truncateByBytes_バイト数以内の文字列はそのまま返す(): void
+    {
+        // 'ABC' = 3バイト
+        $this->assertSame('ABC', SjisConverter::truncateByBytes('ABC', 10));
+        // '日本語' = 6バイト
+        $this->assertSame('日本語', SjisConverter::truncateByBytes('日本語', 6));
+    }
+
+    #[Test]
+    public function truncateByBytes_ASCII文字を1バイト単位で切り捨てる(): void
+    {
+        // 'ABCDE' = 5バイト → 3バイトで切ると 'ABC'
+        $this->assertSame('ABC', SjisConverter::truncateByBytes('ABCDE', 3));
+    }
+
+    #[Test]
+    public function truncateByBytes_全角文字を2バイト単位で切り捨てる(): void
+    {
+        // '日本語' = 6バイト → 4バイトで切ると '日本'
+        $this->assertSame('日本', SjisConverter::truncateByBytes('日本語', 4));
+        // '日本語' = 6バイト → 2バイトで切ると '日'
+        $this->assertSame('日', SjisConverter::truncateByBytes('日本語', 2));
+    }
+
+    #[Test]
+    public function truncateByBytes_全角文字の途中で切り捨てない(): void
+    {
+        // '日本語' = 6バイト → 奇数バイト指定（3, 5）でも文字の途中では切らない
+        // 3バイト → '日'（2バイト）で止まる（3バイト目は '本' の1バイト目）
+        $this->assertSame('日', SjisConverter::truncateByBytes('日本語', 3));
+        // 5バイト → '日本'（4バイト）で止まる（5バイト目は '語' の1バイト目）
+        $this->assertSame('日本', SjisConverter::truncateByBytes('日本語', 5));
+    }
+
+    #[Test]
+    public function truncateByBytes_混在文字列を正しく切り捨てる(): void
+    {
+        // 'AB日本' = 2 + 4 = 6バイト
+        $this->assertSame('AB日本', SjisConverter::truncateByBytes('AB日本', 6));
+        // → 4バイトで切ると 'AB日'（2 + 2 = 4）
+        $this->assertSame('AB日', SjisConverter::truncateByBytes('AB日本', 4));
+        // → 3バイトで切ると 'AB'（2 + 途中の全角は入らない）
+        $this->assertSame('AB', SjisConverter::truncateByBytes('AB日本', 3));
+    }
+
+    #[Test]
+    public function truncateByBytes_半角カナは1バイトとしてカウントする(): void
+    {
+        // SJIS-winでは半角カナは1バイト（0xA1-0xDF）
+        // 'ｱｲｳ' = 1 + 1 + 1 = 3バイト
+        $this->assertSame('ｱｲｳ', SjisConverter::truncateByBytes('ｱｲｳ', 3));
+        // → 2バイトで切ると 'ｱｲ'
+        $this->assertSame('ｱｲ', SjisConverter::truncateByBytes('ｱｲｳ', 2));
+        // → 1バイトで切ると 'ｱ'
+        $this->assertSame('ｱ', SjisConverter::truncateByBytes('ｱｲｳ', 1));
+    }
+
+    #[Test]
+    public function truncateByBytes_normalizeオプションで正規化後に切り捨てる(): void
+    {
+        // '㈱テスト' → normalize → '(株)テスト'
+        // '(株)テスト' = 4 + 4 = 8バイト
+        // normalize: false では '㈱' = 2バイト → '㈱テ' = 4バイト
+        $this->assertSame('㈱テ', SjisConverter::truncateByBytes('㈱テスト', 4, normalize: false));
+        // normalize: true では '(株)テスト' → 4バイトで '(株' = 3バイト → '(株' の実際は '(' + '株' + ')' の順
+        // '(株)テスト' の各文字: '(' = 1, '株' = 2, ')' = 1, 'テ' = 2, 'ス' = 2, 'ト' = 2
+        // → 4バイト: '(' + '株' + ')' = 4バイト → '(株)'
+        $this->assertSame('(株)', SjisConverter::truncateByBytes('㈱テスト', 4, normalize: true));
+    }
+
+    #[Test]
+    public function truncateByBytes_切り捨て後のバイト数はmaxBytes以内に収まる(): void
+    {
+        $inputs = ['日本語テストABCDE', str_repeat('あ', 50), 'ｱｲｳｴｵ日本語ABC'];
+        foreach ($inputs as $input) {
+            for ($max = 1; $max <= 20; $max++) {
+                $result = SjisConverter::truncateByBytes($input, $max);
+                $bytes = strlen(mb_convert_encoding($result, 'SJIS-win', 'UTF-8'));
+                $this->assertLessThanOrEqual($max, $bytes, "'{$input}' を {$max} バイトで切った結果 '{$result}' が {$bytes} バイトで超過");
+            }
+        }
+    }
+
+    #[Test]
+    public function truncateByBytes_切り捨て後の文字列はSJIS変換してUTF8に戻せる(): void
+    {
+        // 文字の途中で切られていなければラウンドトリップが成立する
+        $input = '日本語テストABC半角ｱｲｳ';
+        for ($max = 1; $max <= 30; $max++) {
+            $result = SjisConverter::truncateByBytes($input, $max);
+            $sjis = mb_convert_encoding($result, 'SJIS-win', 'UTF-8');
+            $restored = mb_convert_encoding($sjis, 'UTF-8', 'SJIS-win');
+            $this->assertSame($result, $restored, "{$max} バイト切り捨て後のラウンドトリップ失敗: '{$result}'");
+        }
+    }
+
+    // =========================================================================
     // 変換テーブル全エントリの網羅確認
     // =========================================================================
 

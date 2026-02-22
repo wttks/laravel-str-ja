@@ -64,6 +64,19 @@ class StrJaServiceProvider extends ServiceProvider
             return KanaConverter::toKatakana($str);
         });
 
+        // 文字幅を返す（全角=2、半角=1）
+        // mb_strwidth() のラッパー。半角カナは 1 としてカウントする
+        Str::macro('strWidth', function (string $str): int {
+            return mb_strwidth($str, 'UTF-8');
+        });
+
+        // SJIS-win 変換後のバイト数が maxBytes 以内になるよう末尾を切り捨てる
+        // 全角文字（2バイト）の途中では切らない
+        // normalize: true にすると正規化後の文字列に対して切り捨てる
+        Str::macro('truncateSjis', function (string $str, int $maxBytes, bool $normalize = false): string {
+            return SjisConverter::truncateByBytes($str, $maxBytes, $normalize);
+        });
+
         // 文字列全体がひらがなか判定（長音符・中点を許容）
         Str::macro('isHiragana', function (string $str): bool {
             return CharTypeChecker::isHiragana($str);
