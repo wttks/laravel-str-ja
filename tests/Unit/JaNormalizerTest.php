@@ -248,4 +248,138 @@ class JaNormalizerTest extends TestCase
         $input = "5\u{2030}";
         $this->assertSame($input, JaNormalizer::normalize($input, punctuation: true));
     }
+
+    // =========================================================================
+    // splitByWhitespace
+    // =========================================================================
+
+    #[Test]
+    public function splitByWhitespace_空文字列は空配列を返す(): void
+    {
+        $this->assertSame([], JaNormalizer::splitByWhitespace(''));
+    }
+
+    #[Test]
+    public function splitByWhitespace_空白なしはそのまま1要素で返す(): void
+    {
+        $this->assertSame(['日本語'], JaNormalizer::splitByWhitespace('日本語'));
+        $this->assertSame(['Hello'], JaNormalizer::splitByWhitespace('Hello'));
+    }
+
+    #[Test]
+    public function splitByWhitespace_半角スペースで分割(): void
+    {
+        $this->assertSame(['Hello', 'World'], JaNormalizer::splitByWhitespace('Hello World'));
+    }
+
+    #[Test]
+    public function splitByWhitespace_全角スペースで分割(): void
+    {
+        // U+3000 IDEOGRAPHIC SPACE
+        $this->assertSame(['日本語', 'テスト'], JaNormalizer::splitByWhitespace("日本語\u{3000}テスト"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_タブで分割(): void
+    {
+        $this->assertSame(['列1', '列2', '列3'], JaNormalizer::splitByWhitespace("列1\t列2\t列3"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_改行で分割(): void
+    {
+        $this->assertSame(['1行目', '2行目', '3行目'], JaNormalizer::splitByWhitespace("1行目\n2行目\r\n3行目"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_NBSPで分割(): void
+    {
+        // U+00A0 NO-BREAK SPACE（コピペで混入しやすい）
+        $this->assertSame(['Hello', 'World'], JaNormalizer::splitByWhitespace("Hello\u{00A0}World"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_細いスペースで分割(): void
+    {
+        // U+2009 THIN SPACE
+        $this->assertSame(['A', 'B'], JaNormalizer::splitByWhitespace("A\u{2009}B"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_ゼロ幅スペースで分割(): void
+    {
+        // U+200B ZERO WIDTH SPACE（不可視。コピペで混入しやすい）
+        $this->assertSame(['日本語', 'テスト'], JaNormalizer::splitByWhitespace("日本語\u{200B}テスト"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_連続した空白は1つの区切りとして扱う(): void
+    {
+        $this->assertSame(['A', 'B'], JaNormalizer::splitByWhitespace('A   B'));
+        $this->assertSame(['日本語', 'テスト'], JaNormalizer::splitByWhitespace("日本語\u{3000}\u{3000}テスト"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_全角と半角の混在空白は1つの区切り(): void
+    {
+        // 全角スペース + 半角スペース + タブ が連続
+        $this->assertSame(['A', 'B'], JaNormalizer::splitByWhitespace("A\u{3000} \tB"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_先頭と末尾の空白は無視される(): void
+    {
+        $this->assertSame(['Hello', 'World'], JaNormalizer::splitByWhitespace('  Hello World  '));
+        $this->assertSame(['日本語'], JaNormalizer::splitByWhitespace("\u{3000}日本語\u{3000}"));
+    }
+
+    #[Test]
+    public function splitByWhitespace_空白のみの文字列は空配列を返す(): void
+    {
+        $this->assertSame([], JaNormalizer::splitByWhitespace('   '));
+        $this->assertSame([], JaNormalizer::splitByWhitespace("\u{3000}\u{3000}"));
+        $this->assertSame([], JaNormalizer::splitByWhitespace("\t\n\r"));
+    }
+
+    #[Test]
+    #[DataProvider('splitByWhitespace_各種空白文字Provider')]
+    public function splitByWhitespace_各種空白文字で正しく分割できる(string $separator, string $description): void
+    {
+        $input = "前{$separator}後";
+        $result = JaNormalizer::splitByWhitespace($input);
+        $this->assertSame(['前', '後'], $result, "{$description} で分割できなかった");
+    }
+
+    public static function splitByWhitespace_各種空白文字Provider(): array
+    {
+        return [
+            '半角スペース'       => ["\u{0020}", 'U+0020 SPACE'],
+            'NBSP'               => ["\u{00A0}", 'U+00A0 NO-BREAK SPACE'],
+            'EN SPACE'           => ["\u{2002}", 'U+2002 EN SPACE'],
+            'EM SPACE'           => ["\u{2003}", 'U+2003 EM SPACE'],
+            'THIN SPACE'         => ["\u{2009}", 'U+2009 THIN SPACE'],
+            'HAIR SPACE'         => ["\u{200A}", 'U+200A HAIR SPACE'],
+            'ゼロ幅スペース'     => ["\u{200B}", 'U+200B ZERO WIDTH SPACE'],
+            '全角スペース'       => ["\u{3000}", 'U+3000 IDEOGRAPHIC SPACE'],
+            'タブ'               => ["\t",        'U+0009 TAB'],
+            '改行LF'             => ["\n",        'U+000A LINE FEED'],
+            '改行CR'             => ["\r",        'U+000D CARRIAGE RETURN'],
+        ];
+    }
+
+    #[Test]
+    public function splitByWhitespace_実用シナリオ_日本語混在テキスト(): void
+    {
+        // フォームからのコピペ入力（全角・半角・NBSPが混在）
+        $input = "山田　太郎\u{00A0}yamada@example.com";
+        $this->assertSame(['山田', '太郎', 'yamada@example.com'], JaNormalizer::splitByWhitespace($input));
+    }
+
+    #[Test]
+    public function splitByWhitespace_実用シナリオ_タグ入力の分割(): void
+    {
+        // スペース区切りのタグ入力
+        $input = 'PHP Laravel　日本語　テスト';
+        $this->assertSame(['PHP', 'Laravel', '日本語', 'テスト'], JaNormalizer::splitByWhitespace($input));
+    }
 }

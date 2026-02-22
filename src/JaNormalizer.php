@@ -39,6 +39,33 @@ class JaNormalizer
     private const CONTROL_CHARS_PATTERN = '/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2064}\x{2066}-\x{206F}\x{FEFF}\x{FFF9}-\x{FFFB}]/u';
 
     /**
+     * 文字列を空白文字で分割して配列を返す。
+     * 全角・半角・特殊スペースを全てカバーする。
+     *
+     * 対象空白:
+     *   \p{Z} : Unicode Space Separator カテゴリ
+     *           全角スペース（U+3000）・NBSP（U+00A0）・細いスペース（U+2009）等を含む
+     *   \s    : 半角スペース・タブ・改行（CR/LF）
+     *   \x{200B}: ゼロ幅スペース（コピペで混入しやすい不可視の空白）
+     *
+     * 連続した空白は1つの区切りとして扱い、空要素は除去する。
+     * 空文字列を渡すと空配列を返す。
+     *
+     * @return string[]
+     */
+    public static function splitByWhitespace(string $str): array
+    {
+        if ($str === '') {
+            return [];
+        }
+
+        $parts = preg_split('/[\p{Z}\s\x{200B}]+/u', $str);
+
+        // 文字列が空白で始まる・終わる場合に生じる空文字列を除去
+        return array_values(array_filter($parts, fn(string $s): bool => $s !== ''));
+    }
+
+    /**
      * 日本語文字列を正規化する。
      *
      * @param string $str     対象文字列

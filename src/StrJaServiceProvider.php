@@ -64,6 +64,12 @@ class StrJaServiceProvider extends ServiceProvider
             return KanaConverter::toKatakana($str);
         });
 
+        // 全角・半角・特殊スペースで文字列を分割する
+        // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
+        Str::macro('splitByWhitespace', function (string $str): array {
+            return JaNormalizer::splitByWhitespace($str);
+        });
+
         // 文字幅を返す（全角=2、半角=1）
         // mb_strwidth() のラッパー。半角カナは 1 としてカウントする
         Str::macro('strWidth', function (string $str): int {
