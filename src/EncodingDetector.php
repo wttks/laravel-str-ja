@@ -72,4 +72,13 @@ class EncodingDetector
 
         return $encoding === 'eucJP-win' || $encoding === 'ASCII';
     }
+
+    /**
+     * 文字列が ASCII のみで構成されているか判定する。
+     * UTF-8 / SJIS-win / eucJP-win いずれとも互換がある純粋な ASCII 文字列かどうかを確認したい場合に使う。
+     */
+    public static function isAscii(string $str): bool
+    {
+        return static::detectEncoding($str) === 'ASCII';
+    }
 }

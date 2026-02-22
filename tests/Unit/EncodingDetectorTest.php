@@ -173,6 +173,37 @@ class EncodingDetectorTest extends TestCase
     }
 
     // =========================================================================
+    // isAscii
+    // =========================================================================
+
+    #[Test]
+    public function isAscii_ASCIIのみはtrue(): void
+    {
+        $this->assertTrue(EncodingDetector::isAscii('Hello World 123'));
+        $this->assertTrue(EncodingDetector::isAscii('abc!@#$%'));
+        $this->assertTrue(EncodingDetector::isAscii(''));
+    }
+
+    #[Test]
+    public function isAscii_UTF8日本語はfalse(): void
+    {
+        $this->assertFalse(EncodingDetector::isAscii('日本語'));
+        $this->assertFalse(EncodingDetector::isAscii('Hello 日本語'));
+    }
+
+    #[Test]
+    public function isAscii_SJISバイナリはfalse(): void
+    {
+        $this->assertFalse(EncodingDetector::isAscii(SjisConverter::toSjis('日本語')));
+    }
+
+    #[Test]
+    public function isAscii_EUCバイナリはfalse(): void
+    {
+        $this->assertFalse(EncodingDetector::isAscii(EucConverter::toEuc('日本語')));
+    }
+
+    // =========================================================================
     // 実用シナリオ: ファイル受信後の振り分け
     // =========================================================================
 

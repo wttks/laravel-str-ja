@@ -84,6 +84,11 @@ class StrJaServiceProvider extends ServiceProvider
             return EncodingDetector::isEuc($str);
         });
 
+        // 文字列が ASCII のみで構成されているか判定する
+        Str::macro('isAscii', function (string $str): bool {
+            return EncodingDetector::isAscii($str);
+        });
+
         // 全角・半角・特殊スペースで文字列を単語に分割する
         // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
         Str::macro('splitWords', function (string $str): array {
