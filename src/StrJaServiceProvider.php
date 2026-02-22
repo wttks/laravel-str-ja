@@ -203,10 +203,22 @@ class StrJaServiceProvider extends ServiceProvider
                 (string) $val,
                 $params[0] ?? 'both'
             ),
+            // 単語数（空白区切り）の検証
+            // word_count:5      → ちょうど5単語
+            // min_word_count:3  → 3単語以上
+            // max_word_count:10 → 10単語以下
+            'word_count'      => fn($attr, $val, $params) => JaNormalizer::countWords((string) $val) === (int) ($params[0] ?? 0),
+            'min_word_count'  => fn($attr, $val, $params) => JaNormalizer::countWords((string) $val) >= (int) ($params[0] ?? 0),
+            'max_word_count'  => fn($attr, $val, $params) => JaNormalizer::countWords((string) $val) <= (int) ($params[0] ?? 0),
         ];
 
         foreach ($rules as $name => $callback) {
             Validator::extend($name, $callback, (string) trans("str-ja::validation.{$name}"));
         }
+
+        // エラーメッセージのプレースホルダー置換
+        Validator::replacer('word_count', fn($msg, $attr, $rule, $params) => str_replace(':count', $params[0] ?? '', $msg));
+        Validator::replacer('min_word_count', fn($msg, $attr, $rule, $params) => str_replace(':min', $params[0] ?? '', $msg));
+        Validator::replacer('max_word_count', fn($msg, $attr, $rule, $params) => str_replace(':max', $params[0] ?? '', $msg));
     }
 }

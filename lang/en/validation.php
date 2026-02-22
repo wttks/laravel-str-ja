@@ -12,4 +12,7 @@ return [
     'is_euc'          => 'The :attribute must be eucJP-win encoded.',
     'no_unsafe_chars' => 'The :attribute contains invalid characters.',
     'is_furigana'     => 'The :attribute must contain only hiragana or full-width katakana characters (spaces allowed).',
+    'word_count'      => 'The :attribute must contain exactly :count word(s).',
+    'min_word_count'  => 'The :attribute must contain at least :min word(s).',
+    'max_word_count'  => 'The :attribute must contain at most :max word(s).',
 ];

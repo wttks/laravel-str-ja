@@ -82,6 +82,16 @@ class JaNormalizer
     }
 
     /**
+     * 文字列の単語数を返す。
+     * 全角・半角・特殊スペースで区切られた単語をカウントする。
+     * 空文字列は 0 を返す。
+     */
+    public static function countWords(string $str): int
+    {
+        return count(static::splitByWhitespace($str));
+    }
+
+    /**
      * 文字列を空白文字で分割して配列を返す。
      * 全角・半角・特殊スペースを全てカバーする。
      *

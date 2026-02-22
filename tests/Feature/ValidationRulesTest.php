@@ -276,6 +276,77 @@ class ValidationRulesTest extends TestCase
     }
 
     // =========================================================================
+    // word_count
+    // =========================================================================
+
+    #[Test]
+    public function word_count_指定した単語数ちょうどは通過(): void
+    {
+        $this->assertTrue($this->passes('word_count:1', 'hello'));
+        $this->assertTrue($this->passes('word_count:2', 'hello world'));
+        $this->assertTrue($this->passes('word_count:2', '山田 太郎'));
+        $this->assertTrue($this->passes('word_count:2', '山田　太郎')); // 全角スペース
+    }
+
+    #[Test]
+    public function word_count_単語数が一致しない場合は失敗(): void
+    {
+        $this->assertTrue($this->fails('word_count:2', 'hello'));
+        $this->assertTrue($this->fails('word_count:2', 'one two three'));
+    }
+
+    // =========================================================================
+    // min_word_count
+    // =========================================================================
+
+    #[Test]
+    public function min_word_count_指定した単語数以上は通過(): void
+    {
+        $this->assertTrue($this->passes('min_word_count:2', 'hello world'));
+        $this->assertTrue($this->passes('min_word_count:2', 'one two three'));
+        $this->assertTrue($this->passes('min_word_count:1', 'hello'));
+    }
+
+    #[Test]
+    public function min_word_count_単語数が少ない場合は失敗(): void
+    {
+        $this->assertTrue($this->fails('min_word_count:2', 'hello'));
+        $this->assertTrue($this->fails('min_word_count:3', 'one two'));
+    }
+
+    // =========================================================================
+    // max_word_count
+    // =========================================================================
+
+    #[Test]
+    public function max_word_count_指定した単語数以下は通過(): void
+    {
+        $this->assertTrue($this->passes('max_word_count:3', 'hello'));
+        $this->assertTrue($this->passes('max_word_count:3', 'one two'));
+        $this->assertTrue($this->passes('max_word_count:3', 'one two three'));
+    }
+
+    #[Test]
+    public function max_word_count_単語数が多い場合は失敗(): void
+    {
+        $this->assertTrue($this->fails('max_word_count:2', 'one two three'));
+        $this->assertTrue($this->fails('max_word_count:1', 'hello world'));
+    }
+
+    #[Test]
+    public function word_count_エラーメッセージにカウントが含まれる(): void
+    {
+        $validator = Validator::make(
+            ['tags' => 'one two three'],
+            ['tags' => 'word_count:2']
+        );
+
+        $this->assertTrue($validator->fails());
+        $message = $validator->errors()->first('tags');
+        $this->assertStringContainsString('2', $message);
+    }
+
+    // =========================================================================
     // エラーメッセージ確認
     // =========================================================================
 

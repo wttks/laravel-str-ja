@@ -476,4 +476,43 @@ class JaNormalizerTest extends TestCase
         $input = "前{$char}後";
         $this->assertSame('前後', JaNormalizer::removeTroubleChars($input), "{$description} が削除されなかった");
     }
+
+    // =========================================================================
+    // countWords
+    // =========================================================================
+
+    #[Test]
+    public function countWords_空文字列は0を返す(): void
+    {
+        $this->assertSame(0, JaNormalizer::countWords(''));
+    }
+
+    #[Test]
+    public function countWords_半角スペース区切りで単語数を返す(): void
+    {
+        $this->assertSame(1, JaNormalizer::countWords('hello'));
+        $this->assertSame(2, JaNormalizer::countWords('hello world'));
+        $this->assertSame(3, JaNormalizer::countWords('one two three'));
+    }
+
+    #[Test]
+    public function countWords_全角スペースや特殊スペースでも分割される(): void
+    {
+        $this->assertSame(2, JaNormalizer::countWords('山田　太郎'));   // 全角スペース
+        $this->assertSame(2, JaNormalizer::countWords("田中\u{00A0}花子")); // NBSP
+    }
+
+    #[Test]
+    public function countWords_前後の空白は無視される(): void
+    {
+        $this->assertSame(2, JaNormalizer::countWords(' hello world '));
+        $this->assertSame(2, JaNormalizer::countWords('　山田　太郎　'));
+    }
+
+    #[Test]
+    public function countWords_連続した空白は1つの区切りとして扱われる(): void
+    {
+        $this->assertSame(2, JaNormalizer::countWords('hello   world'));
+        $this->assertSame(3, JaNormalizer::countWords('a  b  c'));
+    }
 }
