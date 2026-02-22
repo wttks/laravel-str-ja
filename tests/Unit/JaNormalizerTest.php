@@ -382,4 +382,98 @@ class JaNormalizerTest extends TestCase
         $input = 'PHP Laravel　日本語　テスト';
         $this->assertSame(['PHP', 'Laravel', '日本語', 'テスト'], JaNormalizer::splitByWhitespace($input));
     }
+
+    // =========================================================================
+    // hasTroubleChars
+    // =========================================================================
+
+    #[Test]
+    public function hasTroubleChars_通常文字列はfalse(): void
+    {
+        $this->assertFalse(JaNormalizer::hasTroubleChars(''));
+        $this->assertFalse(JaNormalizer::hasTroubleChars('日本語のテスト'));
+        $this->assertFalse(JaNormalizer::hasTroubleChars('Hello World 123'));
+    }
+
+    #[Test]
+    public function hasTroubleChars_タブと改行はfalse(): void
+    {
+        // タブ・LF・CR は通常テキストで使用されるため対象外
+        $this->assertFalse(JaNormalizer::hasTroubleChars("列1\t列2"));
+        $this->assertFalse(JaNormalizer::hasTroubleChars("1行目\n2行目"));
+        $this->assertFalse(JaNormalizer::hasTroubleChars("1行目\r\n2行目"));
+    }
+
+    #[Test]
+    #[DataProvider('troubleCharsProvider')]
+    public function hasTroubleChars_トラブル文字を含む場合はtrue(string $char, string $description): void
+    {
+        $this->assertTrue(JaNormalizer::hasTroubleChars($char), "{$description} が検出されなかった");
+        // 通常文字と混在しても検出できる
+        $this->assertTrue(JaNormalizer::hasTroubleChars("日本語{$char}テスト"), "{$description} が混在時に検出されなかった");
+    }
+
+    public static function troubleCharsProvider(): array
+    {
+        return [
+            'NULL'              => ["\x00",         'U+0000 NULL'],
+            'BEL'               => ["\x07",         'U+0007 BEL'],
+            'BS'                => ["\x08",         'U+0008 BS'],
+            'VT'                => ["\x0B",         'U+000B VT'],
+            'FF'                => ["\x0C",         'U+000C FF'],
+            'ESC'               => ["\x1B",         'U+001B ESC'],
+            'DEL'               => ["\x7F",         'U+007F DEL'],
+            'ゼロ幅スペース'     => ["\u{200B}",    'U+200B ZERO WIDTH SPACE'],
+            'ZWNJ'              => ["\u{200C}",    'U+200C ZERO WIDTH NON-JOINER'],
+            'ZWJ'               => ["\u{200D}",    'U+200D ZERO WIDTH JOINER'],
+            'LRM'               => ["\u{200E}",    'U+200E LEFT-TO-RIGHT MARK'],
+            'RLM'               => ["\u{200F}",    'U+200F RIGHT-TO-LEFT MARK'],
+            '双方向制御'         => ["\u{202A}",    'U+202A LEFT-TO-RIGHT EMBEDDING'],
+            'Word Joiner'       => ["\u{2060}",    'U+2060 WORD JOINER'],
+            'BOM'               => ["\u{FEFF}",    'U+FEFF BOM'],
+        ];
+    }
+
+    // =========================================================================
+    // removeTroubleChars
+    // =========================================================================
+
+    #[Test]
+    public function removeTroubleChars_通常文字列はそのまま返す(): void
+    {
+        $this->assertSame('', JaNormalizer::removeTroubleChars(''));
+        $this->assertSame('日本語のテスト', JaNormalizer::removeTroubleChars('日本語のテスト'));
+        $this->assertSame("列1\t列2\n行2", JaNormalizer::removeTroubleChars("列1\t列2\n行2"));
+    }
+
+    #[Test]
+    public function removeTroubleChars_トラブル文字を削除する(): void
+    {
+        // ゼロ幅スペース混入（コピペでよくある）
+        $this->assertSame('日本語テスト', JaNormalizer::removeTroubleChars("日本語\u{200B}テスト"));
+
+        // BOM が先頭についている
+        $this->assertSame('Hello', JaNormalizer::removeTroubleChars("\u{FEFF}Hello"));
+
+        // NULL バイト混入
+        $this->assertSame('Hello', JaNormalizer::removeTroubleChars("Hel\x00lo"));
+
+        // 複数種類が混在
+        $this->assertSame('テスト', JaNormalizer::removeTroubleChars("\u{FEFF}テ\u{200B}ス\x00ト"));
+    }
+
+    #[Test]
+    public function removeTroubleChars_タブと改行は保持される(): void
+    {
+        $input = "列1\t列2\n1行目\r\n2行目";
+        $this->assertSame($input, JaNormalizer::removeTroubleChars($input));
+    }
+
+    #[Test]
+    #[DataProvider('troubleCharsProvider')]
+    public function removeTroubleChars_各トラブル文字が削除される(string $char, string $description): void
+    {
+        $input = "前{$char}後";
+        $this->assertSame('前後', JaNormalizer::removeTroubleChars($input), "{$description} が削除されなかった");
+    }
 }

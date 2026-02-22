@@ -28,15 +28,58 @@ class JaNormalizer
     private static ?array $punctuationTable = null;
 
     /**
-     * 不可視制御文字・BOMにマッチする正規表現パターン。
-     * - U+200B〜U+200F: ゼロ幅スペース等
-     * - U+202A〜U+202E: 双方向制御文字
-     * - U+2060〜U+2064: Word Joiner 等
-     * - U+2066〜U+206F: 双方向分離制御文字等
-     * - U+FEFF: BOM / Zero Width No-Break Space
-     * - U+FFF9〜U+FFFB: Interlinear Annotation 制御文字
+     * トラブルの原因となる文字にマッチする正規表現パターン。
+     *
+     * ASCII 制御文字（タブ U+0009・LF U+000A・CR U+000D は通常テキストで使用されるため除外）:
+     *   - U+0000-U+0008: NULL, SOH, STX, ETX, EOT, ENQ, ACK, BEL, BS
+     *   - U+000B: VT（垂直タブ）
+     *   - U+000C: FF（フォームフィード）
+     *   - U+000E-U+001F: SO〜US（各種制御文字）
+     *   - U+007F: DEL
+     *
+     * Unicode 不可視文字・制御文字:
+     *   - U+200B〜U+200F: ゼロ幅スペース等
+     *   - U+202A〜U+202E: 双方向制御文字
+     *   - U+2060〜U+2064: Word Joiner 等
+     *   - U+2066〜U+206F: 双方向分離制御文字等
+     *   - U+FEFF: BOM / Zero Width No-Break Space
+     *   - U+FFF9〜U+FFFB: Interlinear Annotation 制御文字
      */
-    private const CONTROL_CHARS_PATTERN = '/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2064}\x{2066}-\x{206F}\x{FEFF}\x{FFF9}-\x{FFFB}]/u';
+    private const TROUBLE_CHARS_PATTERN = '/[\x{00}-\x{08}\x{0B}\x{0C}\x{0E}-\x{1F}\x{7F}\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2060}-\x{2064}\x{2066}-\x{206F}\x{FEFF}\x{FFF9}-\x{FFFB}]/u';
+
+    /**
+     * @deprecated TROUBLE_CHARS_PATTERN を使うこと
+     * normalize() 内で後方互換のため残す
+     */
+    private const CONTROL_CHARS_PATTERN = self::TROUBLE_CHARS_PATTERN;
+
+    /**
+     * トラブルの原因となる文字（ASCII制御文字・Unicode不可視文字・BOM等）が含まれるか判定する。
+     * 対象文字の詳細は TROUBLE_CHARS_PATTERN のコメントを参照。
+     * タブ（U+0009）・LF（U+000A）・CR（U+000D）は通常テキストで使用されるため対象外。
+     */
+    public static function hasTroubleChars(string $str): bool
+    {
+        if ($str === '') {
+            return false;
+        }
+
+        return (bool) preg_match(self::TROUBLE_CHARS_PATTERN, $str);
+    }
+
+    /**
+     * トラブルの原因となる文字（ASCII制御文字・Unicode不可視文字・BOM等）を削除して返す。
+     * 対象文字の詳細は TROUBLE_CHARS_PATTERN のコメントを参照。
+     * タブ（U+0009）・LF（U+000A）・CR（U+000D）は通常テキストで使用されるため対象外。
+     */
+    public static function removeTroubleChars(string $str): string
+    {
+        if ($str === '') {
+            return '';
+        }
+
+        return preg_replace(self::TROUBLE_CHARS_PATTERN, '', $str) ?? $str;
+    }
 
     /**
      * 文字列を空白文字で分割して配列を返す。

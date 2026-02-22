@@ -89,6 +89,16 @@ class StrJaServiceProvider extends ServiceProvider
             return EncodingDetector::isAscii($str);
         });
 
+        // トラブルの原因となる文字（ASCII制御文字・Unicode不可視文字・BOM等）が含まれるか判定
+        Str::macro('hasTroubleChars', function (string $str): bool {
+            return JaNormalizer::hasTroubleChars($str);
+        });
+
+        // トラブルの原因となる文字を削除する
+        Str::macro('removeTroubleChars', function (string $str): string {
+            return JaNormalizer::removeTroubleChars($str);
+        });
+
         // 全角・半角・特殊スペースで文字列を単語に分割する
         // \p{Z}（全角スペース・NBSP・細いスペース等）・\s・ゼロ幅スペースに対応
         Str::macro('splitWords', function (string $str): array {
