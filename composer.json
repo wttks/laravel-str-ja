@@ -1,0 +1,41 @@
+{
+    "name": "wttks/laravel-str-ja",
+    "description": "Laravel Str クラスの日本語拡張。UTF-8 ↔ SJIS-win 変換・IBM拡張文字／異体字の正規化・その他日本語処理を提供します。",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "sjis", "utf-8", "shift-jis", "encoding", "japanese", "異体字", "日本語"],
+    "authors": [
+        {
+            "name": "wttks"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-intl": "*",
+        "ext-mbstring": "*",
+        "illuminate/support": "^11.0|^12.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "orchestra/testbench": "^9.0|^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wttks\\StrJa\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Wttks\\StrJa\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Wttks\\StrJa\\StrJaServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
