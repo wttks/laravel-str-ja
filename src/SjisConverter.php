@@ -73,6 +73,24 @@ class SjisConverter
         return $str;
     }
 
+    /**
+     * 文字列を SJIS-win に変換したときのバイト数を返す。
+     *
+     * @param bool $normalize true にすると NFKC 正規化・異体字変換を行ってからバイト数を計算する
+     */
+    public static function byteLength(string $str, bool $normalize = false): int
+    {
+        if ($str === '') {
+            return 0;
+        }
+
+        if ($normalize) {
+            $str = static::normalize($str);
+        }
+
+        return strlen(mb_convert_encoding($str, 'SJIS-win', 'UTF-8'));
+    }
+
     // =========================================================================
     // ベンチマーク比較用の別実装
     // 通常使用は normalize() / toSjis() を使うこと

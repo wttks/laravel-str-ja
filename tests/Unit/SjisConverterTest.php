@@ -167,6 +167,56 @@ class SjisConverterTest extends TestCase
     }
 
     // =========================================================================
+    // byteLength: SJIS-win 変換後バイト数
+    // =========================================================================
+
+    #[Test]
+    public function 空文字列のバイト数は0(): void
+    {
+        $this->assertSame(0, SjisConverter::byteLength(''));
+    }
+
+    #[Test]
+    public function ASCII文字は1文字1バイト(): void
+    {
+        $this->assertSame(3, SjisConverter::byteLength('ABC'));
+    }
+
+    #[Test]
+    public function 日本語は1文字2バイト(): void
+    {
+        // 「日本語」= 3文字 × 2バイト = 6バイト
+        $this->assertSame(6, SjisConverter::byteLength('日本語'));
+    }
+
+    #[Test]
+    public function 混在文字列のバイト数を正しく計算する(): void
+    {
+        // 'AB' (2) + '日本' (4) = 6バイト
+        $this->assertSame(6, SjisConverter::byteLength('AB日本'));
+    }
+
+    #[Test]
+    public function normalizeオプションなしは変換前のバイト数を返す(): void
+    {
+        // 髙（はしご高）はSJIS変換前は髙のまま → 2バイト
+        // normalize: false（デフォルト）
+        $this->assertSame(2, SjisConverter::byteLength('髙'));
+    }
+
+    #[Test]
+    public function normalizeオプションありは正規化後のバイト数を返す(): void
+    {
+        // 髙 → normalize → 高 → SJIS → 2バイト（どちらも2バイトだが正規化が通ることを確認）
+        $this->assertSame(2, SjisConverter::byteLength('髙', normalize: true));
+
+        // ㈱ → normalize → (株) → SJIS → 4バイト
+        $this->assertSame(4, SjisConverter::byteLength('㈱', normalize: true));
+        // normalize: false では ㈱ はSJIS-win（NEC拡張）で2バイトのまま変換される
+        $this->assertSame(2, SjisConverter::byteLength('㈱', normalize: false));
+    }
+
+    // =========================================================================
     // エッジケース
     // =========================================================================
 

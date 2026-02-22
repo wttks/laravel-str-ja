@@ -24,6 +24,12 @@ class StrJaServiceProvider extends ServiceProvider
             return SjisConverter::normalize($str);
         });
 
+        // SJIS-win に変換したときのバイト数を返す
+        // normalize: true にすると正規化後のバイト数を返す
+        Str::macro('sjisBytes', function (string $str, bool $normalize = false): int {
+            return SjisConverter::byteLength($str, $normalize);
+        });
+
         // UTF-8 → eucJP-win 変換（正規化込み）
         Str::macro('toEuc', function (string $str): string {
             return EucConverter::toEuc($str);
