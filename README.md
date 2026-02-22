@@ -51,6 +51,7 @@ php artisan vendor:publish --tag=str-ja-lang
 | マクロ | 説明 |
 |---|---|
 | `Str::normalizeJa($str, punctuation: false)` | 日本語文字列の正規化（半角カナ→全角、全角ASCII→半角 等） |
+| `Str::sanitizeJa($str, punctuation: false)` | `normalizeJa` の全処理 + 連続空白を半角スペース1つに正規化 + 前後トリム |
 | `Str::squishJa($str)` | トラブル文字削除 + 連続空白を半角スペース1つに正規化 + 前後トリム |
 
 ### かな変換
@@ -175,6 +176,40 @@ Str::normalizeJa('"テスト"…続く', punctuation: true);
 | ダッシュ類 | `–` `—` `―` → `-` |
 | 省略記号 | `…` → `...`、`‥` → `..` |
 
+### 日本語入力の総合サニタイズ（sanitizeJa）
+
+フォーム入力値のクリーンアップに最適な関数。`normalizeJa()` の全処理に加えて空白の正規化・前後トリムを一括実行します。
+
+```php
+// 半角カナ→全角 + 全角ASCII→半角 + 連続空白の正規化 + 前後トリム
+Str::sanitizeJa('　ｶﾞｲﾄﾞ　ＡＢＣ　１２３　');
+// → 'ガイド ABC 123'
+
+// 半角カナの濁音・半濁音を1文字に結合
+Str::sanitizeJa('ﾊﾟｿｺﾝ');     // → 'パソコン'
+
+// 全角スペース・タブ・改行も半角スペース1つに
+Str::sanitizeJa("山田　　太郎\n鈴木");  // → '山田 太郎 鈴木'
+
+// トラブル文字も削除
+Str::sanitizeJa("\u{FEFF}テスト\u{200B}入力"); // → 'テスト入力'
+
+// punctuation: true で一般句読点も変換
+Str::sanitizeJa('"テスト"…続く', punctuation: true);
+// → '"テスト"...続く'
+```
+
+各関数の処理範囲:
+
+| 処理 | `normalizeJa` | `sanitizeJa` | `squishJa` |
+|---|:---:|:---:|:---:|
+| トラブル文字削除 | ✔ | ✔ | ✔ |
+| 半角カナ→全角カナ | ✔ | ✔ | - |
+| 全角ASCII→半角 | ✔ | ✔ | - |
+| 句読点変換（オプション） | ✔ | ✔ | - |
+| 連続空白→半角スペース1つ | - | ✔ | ✔ |
+| 前後トリム | - | ✔ | ✔ |
+
 ### 空白の正規化（squishJa）
 
 `Str::squish()` の日本語強化版。トラブル文字（NULLバイト・ゼロ幅スペース・双方向制御文字等）も合わせて除去します。
@@ -190,10 +225,6 @@ Str::squishJa('　山田太郎　');         // → '山田太郎'
 // トラブル文字も除去（Str::squish() との違い）
 Str::squishJa("Hel\x00lo");           // → 'Hello'（NULLバイト削除）
 Str::squishJa("日本語\u{200B}テスト"); // → '日本語テスト'（ゼロ幅スペース削除）
-
-// 複合ケース
-Str::squishJa("\u{FEFF}山田　　\u{200B}太郎\n\n鈴木");
-// → '山田 太郎 鈴木'
 ```
 
 > **`Str::squish()` との違い**: `Str::squish()` は空白の正規化のみ行います。`squishJa()` はそれに加えてNULLバイト・ゼロ幅スペース・双方向制御文字等のトラブル文字も除去します。
