@@ -2,6 +2,7 @@
 
 namespace Wttks\StrJa;
 
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 
@@ -9,6 +10,17 @@ class StrJaServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // 翻訳ファイルの登録
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'str-ja');
+
+        // 翻訳ファイルのパブリッシュ設定
+        $this->publishes([
+            __DIR__ . '/../lang' => $this->app->langPath('vendor/str-ja'),
+        ], 'str-ja-lang');
+
+        // バリデーションルールの登録
+        $this->registerValidationRules();
+
         // UTF-8 → SJIS-win 変換（正規化込み）
         Str::macro('toSjis', function (string $str): string {
             return SjisConverter::toSjis($str);
@@ -147,5 +159,40 @@ class StrJaServiceProvider extends ServiceProvider
         Str::macro('hasJapanese', function (string $str): bool {
             return CharTypeChecker::hasJapanese($str);
         });
+    }
+
+    // =========================================================================
+    // バリデーションルール登録
+    // =========================================================================
+
+    /**
+     * カスタムバリデーションルールを登録する。
+     *
+     * 使用例:
+     *   'furigana' => ['required', 'is_katakana']
+     *   'name'     => ['required', 'no_unsafe_chars']
+     *   'body'     => ['required', 'is_utf8']
+     */
+    private function registerValidationRules(): void
+    {
+        $rules = [
+            // 文字種判定
+            'is_hiragana'     => fn($attr, $val) => CharTypeChecker::isHiragana((string) $val),
+            'has_hiragana'    => fn($attr, $val) => CharTypeChecker::hasHiragana((string) $val),
+            'is_katakana'     => fn($attr, $val) => CharTypeChecker::isKatakana((string) $val),
+            'has_katakana'    => fn($attr, $val) => CharTypeChecker::hasKatakana((string) $val),
+            'has_japanese'    => fn($attr, $val) => CharTypeChecker::hasJapanese((string) $val),
+            'has_kanji'       => fn($attr, $val) => CharTypeChecker::hasKanji((string) $val),
+            // エンコーディング判定
+            'is_utf8'         => fn($attr, $val) => EncodingDetector::isUtf8((string) $val),
+            'is_sjis'         => fn($attr, $val) => EncodingDetector::isSjis((string) $val),
+            'is_euc'          => fn($attr, $val) => EncodingDetector::isEuc((string) $val),
+            // 安全でない文字が含まれていないこと（含まれていたら失敗）
+            'no_unsafe_chars' => fn($attr, $val) => !JaNormalizer::hasTroubleChars((string) $val),
+        ];
+
+        foreach ($rules as $name => $callback) {
+            Validator::extend($name, $callback, (string) trans("str-ja::validation.{$name}"));
+        }
     }
 }
